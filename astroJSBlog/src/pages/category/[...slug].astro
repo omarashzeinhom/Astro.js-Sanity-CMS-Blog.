@@ -1,0 +1,73 @@
+---
+import { useSanityClient } from "astro-sanity";
+import PortableText from "../../components/PortableText.astro";
+import NavigationBar from "../../components/NavigationBar.astro";
+import Layout from "../../layouts/Layout.astro";
+
+export async function getStaticPaths() {
+  const categories = await useSanityClient().fetch(`*[_type == "categories"]`);
+  return categories.map((category: { categorySlug: { current: any } }) => {
+    return {
+      params: {
+        slug: category?.categorySlug || "",
+      },
+      props: { ...category },
+    };
+  });
+}
+
+const { categoryTitle, categorySlug, _createdAt } = Astro.props;
+const articles = await useSanityClient().fetch(`*[_type == "articles"]`);
+
+export async function getStaticProps({ params }: { params: { slug: string } }) {
+  const category = await useSanityClient().fetch(
+    `*[_type == "categories" && categorySlug.current == $slug][0]`,
+    { slug: params.slug }
+  );
+  const articles = await useSanityClient().fetch(
+    `*[_type == "articles" && references($category)][$fromIndex..$toIndex]`,
+    {
+      category: category?._id,
+      fromIndex: 0,
+      toIndex: 10, // Adjust as needed
+    }
+  );
+
+  return {
+    props: {
+      categoryTitle: category?.categoryTitle || "",
+      categorySlug: category?.categorySlug?.current || "",
+      articles: articles || [],
+    },
+  };
+}
+---
+
+<Layout title={categorySlug}>
+  <NavigationBar />
+  <p class="text-black group-hover:text-gray">Category</p>
+  <h2 class="text-gray-500 bold">{categoryTitle}</h2>
+  <p class="hidden">{categorySlug}</p>
+  <small>{_createdAt}</small>
+
+  {
+    articles.map(
+      (article: {
+        title: string;
+        articleSlug: string;
+        categories: [string];
+        current: any;
+      }) => (
+        <div>
+          <a href={`/article/${article?.articleSlug?.current}`}>
+            {article?.title}
+          </a>
+        </div>
+      )
+    )
+  }
+
+  <button>
+    <a href="/"> Go Back Home</a>
+  </button>
+</Layout>

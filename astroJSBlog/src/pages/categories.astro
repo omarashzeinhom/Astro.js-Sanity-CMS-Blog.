@@ -1,0 +1,34 @@
+---
+import Header from "../components/Header.astro";
+import NavigationBar from "../components/NavigationBar.astro";
+import { useSanityClient } from "astro-sanity";
+import Layout from "../layouts/Layout.astro";
+// Categories
+const categoriesQuery = `*[_type == "categories"]`;
+const categories = await useSanityClient().fetch(categoriesQuery);
+// console.log(firstPost);
+let categoryString = JSON.stringify(categories);
+
+
+---
+
+<Header />
+<NavigationBar />
+<br/>
+<br/>
+
+<Layout title="categories">
+  <h2>Categories</h2>
+  <hr/>
+
+  {categories.map((category: { categoryTitle: string; categorySlug: string }) => (
+    <div class="flex justify-center space-x-2">
+      <button>
+        <a href={`/category/${category?.categorySlug}/`}>
+          {category?.categoryTitle}
+        </a>
+      </button>
+    </div>
+  ))}
+</Layout>
+
